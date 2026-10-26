@@ -1,0 +1,3 @@
+# Aider 不会自动发现 AGENTS.md。这里让它每次把该文件读进上下文。
+read:
+  - AGENTS.md
