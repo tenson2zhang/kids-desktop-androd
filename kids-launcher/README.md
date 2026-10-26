@@ -6,16 +6,13 @@
 
 ## 在 GitHub 上一键生成安装包
 
-Actions 工作流「构建安装包」会按当时的源代码打出已签名的 APK，并发布到 Releases。推送到 `main` 且改动了 `kids-launcher/` 时会自动跑；也可以随时手动点一次。
+Actions 工作流「构建安装包」会按当时的源代码打出已签名的 APK，并发布到 Releases。推送到 `main` 且改动了 `kids-launcher/` 时会自动跑；也可以随时手动点一次。不需要再填写签名 Secret。
 
-第一次使用前，到仓库的 Settings → Secrets and variables → Actions，新增两个 Secret。名字必须一致，值不要写进 Git：
+第一次成功的构建会新生成一把签名，并和安装包一起放在 Release 里。之后的构建沿用这把签名。仓库是公开的，所以这把签名只负责让手机能安装，不要把它当成私密密钥。
 
-- `ANDROID_KEYSTORE_BASE64`：签名库 `kids-desktop.jks` 的 Base64，大约三千七百个字符。整段粘贴，换行和代码块标记会被忽略；只复制一部分的话，构建会提示长度对不上
-- `ANDROID_KEYSTORE_PASSWORD`：签名库口令
+如果手机上已经装着以前那把旧签名打出来的「儿童桌面」，需要先卸载再安装。卸载会清掉保护密码。
 
-别名默认是 `kidsdesktop`。密钥口令和库口令不同时，再加 `ANDROID_KEY_PASSWORD`；别名不是 `kidsdesktop` 时，再加 `ANDROID_KEY_ALIAS`。
-
-然后：
+使用步骤：
 
 1. 打开仓库的 Actions。
 2. 左侧选择「构建安装包」。
@@ -26,7 +23,7 @@ https://github.com/tenson2zhang/kids-desktop-androd/releases/download/apk/kids-d
 
 同一次运行的 Artifacts 里也有 `kids-desktop.apk`。安装时如果系统询问，允许浏览器「安装未知应用」。装好后应用名称是「儿童桌面」。
 
-仓库里还留着一份已经打好的 `kids-launcher/dist/kids-desktop.apk`。Actions 第一次成功之前可以用它；之后以 Releases 里的新包为准。
+仓库里还留着一份用旧签名打好的 `kids-launcher/dist/kids-desktop.apk`。它和 Actions 新包不能互相覆盖安装。
 
 ## 能做什么
 

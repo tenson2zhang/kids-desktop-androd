@@ -291,3 +291,31 @@ Secret 里的 Base64 只保存了大约前一半。头四个字节仍是 30 82 0
 ### 代理
 
 已停下，不再继续改构建。
+
+## 2026-10-26 07:17:52.581 UTC
+
+### 用户
+
+不要重复把密钥改来改去，你尝试一下其他方式，例如：删除原来的，重新生成全新的。
+
+## 2026-10-26 07:17:52.581 UTC
+
+### 思考
+
+不再修补原来的 Base64 Secret。构建时如果 Release 里还没有签名，就用 keytool 新生成一把；有了就沿用。签名文件只放在 Release 里，不写进 Git，也不再读取 ANDROID_KEYSTORE_BASE64。新签名和仓库里旧的 dist APK 不能互相覆盖安装。
+
+## 2026-10-26 07:19:47.987 UTC
+
+### 工具
+
+名称：Shell
+
+参数：python3 kids-launcher/ci/test_prepare_signing.py；用新生成的签名执行 ./gradlew :app:assembleRelease，再用 apksigner verify --min-sdk-version 23。随后恢复原来的本地签名文件。
+
+结果：测试通过。新签名能打开，损坏的签名会换新，沿用时文件摘要不变。assembleRelease 为 BUILD SUCCESSFUL。apksigner 退出码 0，证书 DN 为 CN=Kids Desktop。keystore.properties 与 jks 仍被 gitignore。口令未写入会话。
+
+## 2026-10-26 07:19:47.987 UTC
+
+### 代理
+
+已改成不再使用原来的签名 Secret。第一次成功的「构建安装包」会新生成一把签名，并和 APK 一起放在 Release 里，以后沿用这把。手机上如果装着旧包，需要先卸载再安装。工作流在拉取请求 https://github.com/tenson2zhang/kids-desktop-androd/pull/4 ，合并到 main 后再运行。

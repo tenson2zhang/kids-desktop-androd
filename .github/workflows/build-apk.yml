@@ -51,34 +51,27 @@ jobs:
           set -o pipefail
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" "platforms;android-34" "build-tools;34.0.0"
 
-      - name: 检查签名库解析
-        run: python3 kids-launcher/ci/test_materialize_keystore.py
+      - name: 检查签名准备
+        run: python3 kids-launcher/ci/test_prepare_signing.py
 
-      - name: 写入签名配置
+      - name: 准备签名
         env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: python3 kids-launcher/ci/materialize_keystore.py
-
-      - name: 核对签名库
-        working-directory: kids-launcher
+          GH_TOKEN: ${{ github.token }}
         run: |
-          python3 - << 'PY'
-          from pathlib import Path
-          props = {}
-          for line in Path("keystore.properties").read_text(encoding="utf-8").splitlines():
-              if not line.strip() or line.startswith("#") or "=" not in line:
-                  continue
-              key, value = line.split("=", 1)
-              props[key] = value
-          Path("/tmp/kspass").write_text(props["storePassword"], encoding="utf-8")
-          Path("/tmp/kspass").chmod(0o600)
-          Path("/tmp/ksalias").write_text(props.get("keyAlias") or "kidsdesktop", encoding="utf-8")
-          PY
-          keytool -list -keystore keystore/kids-desktop.jks -storepass:file /tmp/kspass -alias "$(tr -d '\n' < /tmp/ksalias)"
-          rm -f /tmp/kspass /tmp/ksalias
+          mkdir -p "$RUNNER_TEMP/signing"
+          assets="$(gh release view apk --json assets --jq '.assets[].name' 2>/dev/null || true)"
+          if printf '%s\n' "$assets" | grep -qx kids-desktop.jks \
+            && printf '%s\n' "$assets" | grep -qx keystore.properties; then
+            gh release download apk \
+              --pattern kids-desktop.jks \
+              --pattern keystore.properties \
+              --dir "$RUNNER_TEMP/signing" \
+              --clobber
+          fi
+          python3 kids-launcher/ci/prepare_signing.py \
+            --source "$RUNNER_TEMP/signing" \
+            --keystore kids-launcher/keystore/kids-desktop.jks \
+            --properties kids-launcher/keystore.properties
 
       - name: 构建正式安装包
         working-directory: kids-launcher
@@ -109,7 +102,9 @@ jobs:
           sha=$(sha256sum "$RUNNER_TEMP/kids-desktop.apk" | awk '{print $1}')
           url="https://github.com/${GITHUB_REPOSITORY}/releases/download/apk/kids-desktop.apk"
           cat > "$RUNNER_TEMP/notes.md" <<EOF
-          由 GitHub Actions 按当前源代码构建。
+          由 GitHub Actions 按当前源代码构建。签名是构建时新生成的，之后会一直沿用。
+
+          如果手机上已经装着旧密钥打出来的「儿童桌面」，需要先卸载再安装。卸载会清掉保护密码。
 
           - 提交：${GITHUB_SHA}
           - SHA-256：${sha}
@@ -119,7 +114,10 @@ jobs:
           gh release delete apk --yes --cleanup-tag || true
           created=0
           for _ in 1 2 3 4 5; do
-            if gh release create apk "$RUNNER_TEMP/kids-desktop.apk" \
+            if gh release create apk \
+              "$RUNNER_TEMP/kids-desktop.apk" \
+              kids-launcher/keystore/kids-desktop.jks \
+              kids-launcher/keystore.properties \
               --target "$GITHUB_SHA" \
               --title "儿童桌面安装包" \
               --latest \
