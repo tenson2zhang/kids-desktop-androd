@@ -52,6 +52,9 @@ def main() -> None:
     else:
         check("reject-short", False)
 
+    dirty = encoded[:40] + "!\n" + encoded[40:]
+    check("ignore-junk-char", ks.decode_keystore(dirty) == payload)
+
     half = encoded[: len(encoded) // 2]
     try:
         ks.decode_keystore(half)

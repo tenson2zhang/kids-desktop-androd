@@ -36,19 +36,17 @@ def looks_like_keystore(data: bytes) -> bool:
 
 def _decode_chunk(chunk: str) -> bytes | None:
     if ("-" in chunk or "_" in chunk) and "+" not in chunk and "/" not in chunk:
-        body = chunk
-        urlsafe = True
+        body = re.sub(r"[^A-Za-z0-9_=-]", "", chunk)
+        decode = base64.urlsafe_b64decode
     else:
-        body = chunk.replace("-", "").replace("_", "")
-        urlsafe = False
+        body = re.sub(r"[^A-Za-z0-9+/=]", "", chunk)
+        decode = lambda value: base64.b64decode(value, validate=True)
     body = body.rstrip("=")
     if len(body) < 16:
         return None
     body += "=" * ((-len(body)) % 4)
     try:
-        if urlsafe:
-            return base64.urlsafe_b64decode(body)
-        return base64.b64decode(body, validate=True)
+        return decode(body)
     except Exception:
         return None
 
@@ -86,11 +84,12 @@ def decode_keystore(raw: str) -> bytes:
     if truncated:
         data = max(truncated, key=len)
         expected = declared_der_length(data)
+        alphabet = len(re.sub(r"[^A-Za-z0-9+/=_-]", "", compact))
         print(
             "::error::ANDROID_KEYSTORE_BASE64 不完整。"
             f"解出 {len(data)} 字节，密钥库头声明总长 {expected} 字节。"
-            f"Secret 原始长度 {len(raw)}。"
-            "请整段重新粘贴 kids-desktop.jks 的 Base64，不要只复制屏幕上露出的一部分。",
+            f"Secret 原始长度 {len(raw)}，有效字符 {alphabet}，完整 Base64 是 3716 个有效字符，并以 = 结尾。"
+            "请整段重新粘贴，最后必须是 JxA=。",
             file=sys.stderr,
         )
         raise ValueError(f"keystore-truncated actual={len(data)} expected={expected}")
