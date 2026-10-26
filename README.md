@@ -10,4 +10,4 @@
 
 ## 儿童桌面
 
-安卓儿童桌面在 `kids-launcher/`。安装后可设为系统默认桌面，只用白名单应用，离开前要保护密码。构建和限制见 `kids-launcher/README.md`。
+安卓儿童桌面在 `kids-launcher/`。可直接安装的包是 `kids-launcher/dist/kids-desktop.apk`。说明见 `kids-launcher/README.md`。

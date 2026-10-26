@@ -4,6 +4,22 @@
 
 最低系统版本是安卓 6（API 23）。
 
+## 直接下载安装
+
+可安装的正式包在仓库里的 `kids-launcher/dist/kids-desktop.apk`。版本 1.0.0，已经签名，手机下载后就能安装。
+
+在 GitHub 上打开这个文件，点 Download：
+
+https://github.com/tenson2zhang/kids-desktop-androd/blob/cursor/kids-desktop-launcher-c301/kids-launcher/dist/kids-desktop.apk
+
+手机浏览器也可以直接下载：
+
+https://github.com/tenson2zhang/kids-desktop-androd/raw/cursor/kids-desktop-launcher-c301/kids-launcher/dist/kids-desktop.apk
+
+SHA-256：`4e0fe8885bccd822782982e1fb11e43151ae20f83e5fc2dce363897d8b322b79`
+
+安装时如果系统询问，允许浏览器「安装未知应用」。装好后，应用名称是「儿童桌面」。从原来的桌面打开它，按提示设成默认桌面。
+
 ## 能做什么
 
 - 作为系统桌面安装。首次打开会一步步要求：设置保护密码、选择白名单、设为默认桌面、打开防逃离。

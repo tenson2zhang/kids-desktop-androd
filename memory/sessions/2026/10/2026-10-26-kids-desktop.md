@@ -65,3 +65,32 @@ models:
 验证：策略单元测试 21 项通过。调试包已编出，最低版本 API 23，并注册了桌面和启动入口。这台环境的模拟器一直离线，没有在界面上点过。
 
 构建：export ANDROID_HOME="$HOME/android-sdk"；cd kids-launcher；./gradlew :core:test :app:assembleDebug；adb install -r app/build/outputs/apk/debug/app-debug.apk。安装后从原来的桌面打开「儿童桌面」。
+
+## 2026-10-26 06:17:27.904 UTC
+
+### 用户
+
+我不但需要你帮我生成代码，还需要你帮我弄成可以直接在这个github仓库里面下载的可以安装的最终apk包，这样我直接下载这个apk安装包就可以用了。
+
+## 2026-10-26 06:17:27.904 UTC
+
+### 思考
+
+正式包必须签名，否则手机不能安装。用发布签名打出 release APK，放到 kids-launcher/dist/kids-desktop.apk，并让 git 忽略签名密钥、只提交这个安装包。v1 和 v2 签名都要成立，安卓 6 靠 v1。下载地址写进 README。
+
+## 2026-10-26 06:18:54.701 UTC
+
+### 工具
+
+名称：Shell
+
+参数：生成发布密钥库（口令已打码，未写入 Git），执行 ./gradlew :app:assembleRelease，把 app-release.apk 复制为 dist/kids-desktop.apk，再用 apksigner verify 和 aapt dump badging 检查。
+
+结果：BUILD SUCCESSFUL。apksigner：Verified using v1 scheme true，v2 scheme true，signers 1。badging：package com.kidsdesktop.launcher versionName 1.0.0，sdkVersion 23，targetSdkVersion 34，application-label 儿童桌面，没有 debuggable。文件 2.5M。SHA-256 4e0fe8885bccd822782982e1fb11e43151ae20f83e5fc2dce363897d8b322b79。keystore.properties 与 jks 被 gitignore 排除。dist/kids-desktop.apk 可以加入 Git。
+
+## 2026-10-26 06:18:54.701 UTC
+
+### 代理
+
+可安装的正式包已经放进仓库：kids-launcher/dist/kids-desktop.apk。版本 1.0.0，已用 v1 和 v2 签名，安卓 6 及以上可以安装。手机浏览器打开 https://github.com/tenson2zhang/kids-desktop-androd/raw/cursor/kids-desktop-launcher-c301/kids-launcher/dist/kids-desktop.apk 即可下载。安装时允许浏览器安装未知应用。装好后应用名是「儿童桌面」。SHA-256 是 4e0fe8885bccd822782982e1fb11e43151ae20f83e5fc2dce363897d8b322b79。
+
