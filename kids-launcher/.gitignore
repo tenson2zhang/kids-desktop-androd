@@ -6,5 +6,9 @@ captures/
 .externalNativeBuild/
 .cxx/
 **/build/
+keystore/
+keystore.properties
+*.jks
 *.apk
 *.aab
+!dist/kids-desktop.apk
