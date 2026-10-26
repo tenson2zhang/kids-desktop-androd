@@ -10,4 +10,4 @@
 
 ## 儿童桌面
 
-安卓儿童桌面在 `kids-launcher/`。可直接安装的包是 `kids-launcher/dist/kids-desktop.apk`。说明见 `kids-launcher/README.md`。
+安卓儿童桌面在 `kids-launcher/`。在 GitHub Actions 里运行「构建安装包」，即可按最新源代码生成 APK。说明见 `kids-launcher/README.md`。
