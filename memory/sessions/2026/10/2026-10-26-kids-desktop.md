@@ -229,3 +229,25 @@ models:
 ### 代理
 
 签名库已经能写进去。这次失败是运行器上有两套 Android SDK 路径。已经改成只用同一套，并重新推上去等这次构建结果。
+
+## 2026-10-26 07:06:03.497 UTC
+
+### 工具
+
+名称：GitHub CI 通知
+
+参数：branch cursor/fix-apk-keystore-c301，commit 6a2389e1393688004ef42ff7dd651e8aee7f9bb1，conclusion failure。
+
+结果：运行 40283483413。ANDROID_HOME 与 ANDROID_SDK_ROOT 已经相同。单元测试 21 项通过。:app:packageRelease 失败：Failed to read key kidsdesktop from store，PKCS12 keystore not in version 3 format。写入步骤打印「已写入签名库，1265 字节」。完整密钥库是 2786 字节，对应 Base64 3716 个字符；前 1687 个字符解码后正好是 1265 字节。
+
+## 2026-10-26 07:07:56.920 UTC
+
+### 思考
+
+Secret 里的 Base64 只保存了大约前一半。头四个字节仍是 30 82 0a de，所以外层声明总长 2786，实际只有 1265，keytool 就报版本不对。解析改为长度对不上就直接失败，并说明两边的字节数。完整 Base64 只在聊天里给用户，会话里打码。
+
+## 2026-10-26 07:07:56.920 UTC
+
+### 代理
+
+当前 Secret 里的签名库不完整：解出来 1265 字节，完整文件是 2786 字节。请把 ANDROID_KEYSTORE_BASE64 整段换成聊天里给出的 Base64（3716 个字符，换行不算）。换好之前，GitHub 上的构建仍会失败，并提示两边长度对不上。口令不用改。

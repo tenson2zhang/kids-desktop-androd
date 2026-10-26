@@ -13,12 +13,25 @@ _INVISIBLE = re.compile(r"[\u200b\u200c\u200d\ufeff]")
 _RUN = re.compile(r"[A-Za-z0-9+/=_-]+")
 
 
+def declared_der_length(data: bytes) -> int | None:
+    if len(data) < 2 or data[0] != 0x30:
+        return None
+    marker = data[1]
+    if marker < 0x80:
+        return 2 + marker
+    count = marker - 0x80
+    if count == 0 or len(data) < 2 + count:
+        return None
+    return 2 + count + int.from_bytes(data[2 : 2 + count], "big")
+
+
 def looks_like_keystore(data: bytes) -> bool:
     if len(data) < 16:
         return False
     if data[:4] == b"\xfe\xed\xfe\xed":
         return True
-    return data[0] == 0x30
+    expected = declared_der_length(data)
+    return expected is not None and expected == len(data)
 
 
 def _decode_chunk(chunk: str) -> bytes | None:
@@ -57,17 +70,38 @@ def decode_keystore(raw: str) -> bytes:
         if run is not None and len(run.group(0)) >= 64:
             candidates.append(run.group(0))
 
-    decoded = [data for chunk in candidates if (data := _decode_chunk(chunk)) is not None and looks_like_keystore(data)]
-    if not decoded:
-        kept = len(_RUN.findall(compact) and compact)
+    decoded: list[bytes] = []
+    truncated: list[bytes] = []
+    for chunk in candidates:
+        data = _decode_chunk(chunk)
+        if data is None:
+            continue
+        if looks_like_keystore(data):
+            decoded.append(data)
+        elif data[:1] == b"\x30":
+            truncated.append(data)
+    if decoded:
+        return max(decoded, key=len)
+
+    if truncated:
+        data = max(truncated, key=len)
+        expected = declared_der_length(data)
         print(
-            "::error::ANDROID_KEYSTORE_BASE64 解出来不是密钥库。"
-            f"原始长度 {len(raw)}，去掉空白后 {len(compact)}。"
-            "请把 kids-desktop.jks 的 Base64 整段放进这个 Secret，口令放在 ANDROID_KEYSTORE_PASSWORD。",
+            "::error::ANDROID_KEYSTORE_BASE64 不完整。"
+            f"解出 {len(data)} 字节，密钥库头声明总长 {expected} 字节。"
+            f"Secret 原始长度 {len(raw)}。"
+            "请整段重新粘贴 kids-desktop.jks 的 Base64，不要只复制屏幕上露出的一部分。",
             file=sys.stderr,
         )
-        raise ValueError(f"keystore-decode-failed kept={kept}")
-    return max(decoded, key=len)
+        raise ValueError(f"keystore-truncated actual={len(data)} expected={expected}")
+
+    print(
+        "::error::ANDROID_KEYSTORE_BASE64 解出来不是密钥库。"
+        f"原始长度 {len(raw)}，去掉空白后 {len(compact)}。"
+        "请把 kids-desktop.jks 的 Base64 整段放进这个 Secret，口令放在 ANDROID_KEYSTORE_PASSWORD。",
+        file=sys.stderr,
+    )
+    raise ValueError("keystore-decode-failed")
 
 
 def escape_property(value: str) -> str:

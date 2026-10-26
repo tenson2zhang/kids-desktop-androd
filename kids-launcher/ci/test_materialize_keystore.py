@@ -13,7 +13,8 @@ import materialize_keystore as ks
 
 
 def sample() -> bytes:
-    return bytes([0x30, 0x82, 0x0A, 0xDE, 0xFB, 0x3F]) + os.urandom(48)
+    body = bytes([0x0A, 0xDE, 0xFB, 0x3F]) + os.urandom(64)
+    return b"\x30\x82" + len(body).to_bytes(2, "big") + body
 
 
 def check(name: str, cond: bool) -> None:
@@ -51,10 +52,25 @@ def main() -> None:
     else:
         check("reject-short", False)
 
+    half = encoded[: len(encoded) // 2]
+    try:
+        ks.decode_keystore(half)
+    except ValueError as exc:
+        check("reject-truncated", "truncated" in str(exc) or "decode-failed" in str(exc))
+    else:
+        check("reject-truncated", False)
+
     real = Path(__file__).resolve().parents[1] / "keystore" / "kids-desktop.jks"
     if real.is_file():
-        real_b64 = base64.b64encode(real.read_bytes()).decode("ascii")
-        check("local-jks", ks.decode_keystore("请粘贴\n" + real_b64) == real.read_bytes())
+        raw = real.read_bytes()
+        real_b64 = base64.b64encode(raw).decode("ascii")
+        check("local-jks", ks.decode_keystore("请粘贴\n" + real_b64) == raw)
+        try:
+            ks.decode_keystore(real_b64[: len(real_b64) // 2])
+        except ValueError as exc:
+            check("reject-real-truncated", "truncated" in str(exc))
+        else:
+            check("reject-real-truncated", False)
 
     print("ALL PASSED")
 
