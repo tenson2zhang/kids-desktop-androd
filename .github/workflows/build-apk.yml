@@ -8,6 +8,12 @@ on:
     paths:
       - "kids-launcher/**"
       - ".github/workflows/build-apk.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "kids-launcher/**"
+      - ".github/workflows/build-apk.yml"
 
 permissions:
   contents: write
@@ -22,6 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ANDROID_HOME: ${{ github.workspace }}/android-sdk
+      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
     steps:
       - name: 取出源代码
         uses: actions/checkout@v4
@@ -44,68 +51,34 @@ jobs:
           set -o pipefail
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$ANDROID_HOME" "platforms;android-34" "build-tools;34.0.0"
 
-      - name: 写入签名配置
+      - name: 检查签名准备
+        run: python3 kids-launcher/ci/test_prepare_signing.py
+
+      - name: 准备签名
         env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          python3 - <<'PY'
-          import base64
-          import os
-          import sys
-          from pathlib import Path
-
-          def prop(value: str) -> str:
-              return (
-                  value.replace("\\", "\\\\")
-                  .replace("\n", "\\n")
-                  .replace("\r", "\\r")
-                  .replace("=", "\\=")
-                  .replace(":", "\\:")
-                  .replace("#", "\\#")
-                  .replace("!", "\\!")
-              )
-
-          encoded = "".join(os.environ.get("ANDROID_KEYSTORE_BASE64", "").split())
-          store_password = os.environ.get("ANDROID_KEYSTORE_PASSWORD", "")
-          if not encoded or not store_password:
-              print(
-                  "::error::缺少签名密钥。请到仓库 Settings → Secrets and variables → Actions，"
-                  "添加 ANDROID_KEYSTORE_BASE64 和 ANDROID_KEYSTORE_PASSWORD，然后重新运行「构建安装包」。",
-                  file=sys.stderr,
-              )
-              sys.exit(1)
-
-          try:
-              keystore_bytes = base64.b64decode(encoded, validate=True)
-          except Exception:
-              print(
-                  "::error::ANDROID_KEYSTORE_BASE64 不是有效的 Base64。请重新粘贴 kids-desktop.jks 的 Base64。",
-                  file=sys.stderr,
-              )
-              sys.exit(1)
-
-          keystore = Path("kids-launcher/keystore/kids-desktop.jks")
-          keystore.parent.mkdir(parents=True, exist_ok=True)
-          keystore.write_bytes(keystore_bytes)
-          keystore.chmod(0o600)
-
-          alias = os.environ.get("ANDROID_KEY_ALIAS") or "kidsdesktop"
-          key_password = os.environ.get("ANDROID_KEY_PASSWORD") or store_password
-          Path("kids-launcher/keystore.properties").write_text(
-              "storeFile=keystore/kids-desktop.jks\n"
-              f"storePassword={prop(store_password)}\n"
-              f"keyAlias={prop(alias)}\n"
-              f"keyPassword={prop(key_password)}\n",
-              encoding="utf-8",
-          )
-          PY
+          mkdir -p "$RUNNER_TEMP/signing"
+          assets="$(gh release view apk --json assets --jq '.assets[].name' 2>/dev/null || true)"
+          if printf '%s\n' "$assets" | grep -qx kids-desktop.jks \
+            && printf '%s\n' "$assets" | grep -qx keystore.properties; then
+            gh release download apk \
+              --pattern kids-desktop.jks \
+              --pattern keystore.properties \
+              --dir "$RUNNER_TEMP/signing" \
+              --clobber
+          fi
+          python3 kids-launcher/ci/prepare_signing.py \
+            --source "$RUNNER_TEMP/signing" \
+            --keystore kids-launcher/keystore/kids-desktop.jks \
+            --properties kids-launcher/keystore.properties
 
       - name: 构建正式安装包
         working-directory: kids-launcher
-        run: chmod +x ./gradlew && ./gradlew :core:test :app:assembleRelease --no-daemon
+        run: |
+          test "$ANDROID_HOME" = "$ANDROID_SDK_ROOT"
+          printf 'sdk.dir=%s\n' "$ANDROID_HOME" > local.properties
+          chmod +x ./gradlew && ./gradlew :core:test :app:assembleRelease --no-daemon
 
       - name: 检查签名并定名
         run: |
@@ -122,13 +95,16 @@ jobs:
           if-no-files-found: error
 
       - name: 发布到 Releases
+        if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           sha=$(sha256sum "$RUNNER_TEMP/kids-desktop.apk" | awk '{print $1}')
           url="https://github.com/${GITHUB_REPOSITORY}/releases/download/apk/kids-desktop.apk"
           cat > "$RUNNER_TEMP/notes.md" <<EOF
-          由 GitHub Actions 按当前源代码构建。
+          由 GitHub Actions 按当前源代码构建。签名是构建时新生成的，之后会一直沿用。
+
+          如果手机上已经装着旧密钥打出来的「儿童桌面」，需要先卸载再安装。卸载会清掉保护密码。
 
           - 提交：${GITHUB_SHA}
           - SHA-256：${sha}
@@ -138,7 +114,10 @@ jobs:
           gh release delete apk --yes --cleanup-tag || true
           created=0
           for _ in 1 2 3 4 5; do
-            if gh release create apk "$RUNNER_TEMP/kids-desktop.apk" \
+            if gh release create apk \
+              "$RUNNER_TEMP/kids-desktop.apk" \
+              kids-launcher/keystore/kids-desktop.jks \
+              kids-launcher/keystore.properties \
               --target "$GITHUB_SHA" \
               --title "儿童桌面安装包" \
               --latest \

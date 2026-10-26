@@ -175,3 +175,147 @@ models:
 参数：action create_pr，branch_name cursor/actions-apk-c301，base_branch main，title 用 GitHub Actions 一键构建安装包。
 
 结果：已创建 https://github.com/tenson2zhang/kids-desktop-androd/pull/3 。
+
+## 2026-10-26 06:56:36.388 UTC
+
+### 用户
+
+构建报错了，你帮我检查一下是什么问题，能直接修复的话，你帮我直接修复
+
+## 2026-10-26 06:56:36.388 UTC
+
+### 思考
+
+两次「构建安装包」都停在写入签名配置。合并后那次是 Secret 还没填。随后手动运行时 Secret 已有值，但严格的 Base64 解码失败。常见原因是粘贴时夹了换行、代码块或说明文字。解析改成先取整段，失败再从密钥库常见开头 MII 里挑最长的一段，并确认解出来是密钥库。拉取请求只构建不发布，这样可以用仓库里已经保存的 Secret 验证。
+
+## 2026-10-26 06:56:36.388 UTC
+
+### 工具
+
+名称：Shell
+
+参数：gh run list；gh run view 40282491342 --log-failed；gh run view 40281859483 --log-failed。
+
+结果：main 上 workflow_dispatch 运行 40282491342 失败。步骤「写入签名配置」报错：ANDROID_KEYSTORE_BASE64 不是有效的 Base64。日志里该 Secret 显示为已掩码。更早的 push 运行 40281859483 失败，报错是缺少签名密钥，当时这两个 Secret 为空。
+
+## 2026-10-26 06:59:54.121 UTC
+
+### 工具
+
+名称：Shell
+
+参数：python3 kids-launcher/ci/test_materialize_keystore.py。再用夹了说明文字、代码块和换行的 Base64 调用 materialize_keystore.py，并用 keytool -list 检查生成的密钥库。
+
+结果：测试全部通过，包括本地密钥库。严格 b64decode 对这份夹杂文本的输入失败，新解析成功，字节与原密钥库一致。keytool 显示 Keystore type: PKCS12。口令未写入会话。
+
+## 2026-10-26 07:02:09.613 UTC
+
+### 工具
+
+名称：GitHub CI 通知
+
+参数：branch cursor/fix-apk-keystore-c301，commit e08061d8b320145400b5ea415035b2c591ffa4f8，conclusion failure。检查「生成可安装包」失败。
+
+结果：运行 40283150428。签名库解析和写入签名配置已成功。构建正式安装包失败：ANDROID_HOME 指向仓库里的 android-sdk，ANDROID_SDK_ROOT 仍是运行器自带的 /usr/local/lib/android/sdk。
+
+## 2026-10-26 07:03:25.892 UTC
+
+### 思考
+
+密钥解析已经通过。剩下的是 GitHub 运行器同时给出两个不同的 SDK 路径，Android Gradle Plugin 拒绝继续。把 ANDROID_SDK_ROOT 设成和 ANDROID_HOME 相同，并写入 local.properties。
+
+## 2026-10-26 07:03:25.892 UTC
+
+### 代理
+
+签名库已经能写进去。这次失败是运行器上有两套 Android SDK 路径。已经改成只用同一套，并重新推上去等这次构建结果。
+
+## 2026-10-26 07:06:03.497 UTC
+
+### 工具
+
+名称：GitHub CI 通知
+
+参数：branch cursor/fix-apk-keystore-c301，commit 6a2389e1393688004ef42ff7dd651e8aee7f9bb1，conclusion failure。
+
+结果：运行 40283483413。ANDROID_HOME 与 ANDROID_SDK_ROOT 已经相同。单元测试 21 项通过。:app:packageRelease 失败：Failed to read key kidsdesktop from store，PKCS12 keystore not in version 3 format。写入步骤打印「已写入签名库，1265 字节」。完整密钥库是 2786 字节，对应 Base64 3716 个字符；前 1687 个字符解码后正好是 1265 字节。
+
+## 2026-10-26 07:07:56.920 UTC
+
+### 思考
+
+Secret 里的 Base64 只保存了大约前一半。头四个字节仍是 30 82 0a de，所以外层声明总长 2786，实际只有 1265，keytool 就报版本不对。解析改为长度对不上就直接失败，并说明两边的字节数。完整 Base64 只在聊天里给用户，会话里打码。
+
+## 2026-10-26 07:07:56.920 UTC
+
+### 代理
+
+当前 Secret 里的签名库不完整：解出来 1265 字节，完整文件是 2786 字节。请把 ANDROID_KEYSTORE_BASE64 整段换成聊天里给出的 Base64（3716 个字符，换行不算）。换好之前，GitHub 上的构建仍会失败，并提示两边长度对不上。口令不用改。
+
+## 2026-10-26 07:11:34.160 UTC
+
+### 工具
+
+名称：GitHub CI 通知
+
+参数：branch cursor/fix-apk-keystore-c301，commit de54b11ad6c0a4128ead7fa4cc8afe7e3a2edc0c，conclusion failure。
+
+结果：运行 40283931868。写入签名配置报错：Secret 原始长度 3714。报出的「解出 1265 字节，声明总长 1186 字节」是中间一段，不是整段。完整 Base64 是 3716 个有效字符，结尾是 JxA=。少最后两个字符时，整段应解出 2785 字节、声明 2786 字节。
+
+## 2026-10-26 07:11:34.160 UTC
+
+### 思考
+
+3714 说明用户已经换过 Secret，但还少两个字符，或者中间夹了无效字符。严格解码整段失败时，旧逻辑改报中间一段，所以数字对不上。现在先去掉无效字符再解整段，错误信息带上有效字符数，并写明完整长度是 3716、结尾必须是 JxA=。
+
+## 2026-10-26 07:11:34.160 UTC
+
+### 代理
+
+这次 Secret 的原始长度是 3714，完整 Base64 是 3716 个有效字符，结尾必须是 JxA=。少这两个字符，密钥库会缺最后一字节。请再粘贴一次上面那 49 行，确认最后一行以 JxA= 结束。口令不用改。换完整之后，合并拉取请求再运行「构建安装包」。
+
+## 2026-10-26 07:14:24.345 UTC
+
+### 用户
+
+停一下
+
+## 2026-10-26 07:14:24.345 UTC
+
+### 思考
+
+用户要停下。不再改构建，也不再跟这次 GitHub Actions 的失败结果。取消对分支 cursor/fix-apk-keystore-c301 的 CI 订阅。
+
+## 2026-10-26 07:14:24.345 UTC
+
+### 代理
+
+已停下，不再继续改构建。
+
+## 2026-10-26 07:17:52.581 UTC
+
+### 用户
+
+不要重复把密钥改来改去，你尝试一下其他方式，例如：删除原来的，重新生成全新的。
+
+## 2026-10-26 07:17:52.581 UTC
+
+### 思考
+
+不再修补原来的 Base64 Secret。构建时如果 Release 里还没有签名，就用 keytool 新生成一把；有了就沿用。签名文件只放在 Release 里，不写进 Git，也不再读取 ANDROID_KEYSTORE_BASE64。新签名和仓库里旧的 dist APK 不能互相覆盖安装。
+
+## 2026-10-26 07:19:47.987 UTC
+
+### 工具
+
+名称：Shell
+
+参数：python3 kids-launcher/ci/test_prepare_signing.py；用新生成的签名执行 ./gradlew :app:assembleRelease，再用 apksigner verify --min-sdk-version 23。随后恢复原来的本地签名文件。
+
+结果：测试通过。新签名能打开，损坏的签名会换新，沿用时文件摘要不变。assembleRelease 为 BUILD SUCCESSFUL。apksigner 退出码 0，证书 DN 为 CN=Kids Desktop。keystore.properties 与 jks 仍被 gitignore。口令未写入会话。
+
+## 2026-10-26 07:19:47.987 UTC
+
+### 代理
+
+已改成不再使用原来的签名 Secret。第一次成功的「构建安装包」会新生成一把签名，并和 APK 一起放在 Release 里，以后沿用这把。手机上如果装着旧包，需要先卸载再安装。工作流在拉取请求 https://github.com/tenson2zhang/kids-desktop-androd/pull/4 ，合并到 main 后再运行。
