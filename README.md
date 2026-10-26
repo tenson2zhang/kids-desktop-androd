@@ -7,3 +7,7 @@
 - 记忆正文：`memory/MEMORY.md`
 - 每次会话自动带上：`AGENTS.md`
 - 会话索引：`memory/sessions/INDEX.md`
+
+## 儿童桌面
+
+安卓儿童桌面在 `kids-launcher/`。安装后可设为系统默认桌面，只用白名单应用，离开前要保护密码。构建和限制见 `kids-launcher/README.md`。

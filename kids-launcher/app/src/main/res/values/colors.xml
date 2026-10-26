@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#F6E7D4</color>
+    <color name="bg_top">#FBF3E7</color>
+    <color name="bg_deep">#E7C9A4</color>
+    <color name="ink">#2C2416</color>
+    <color name="ink_soft">#6F6256</color>
+    <color name="card">#FFFBF6</color>
+    <color name="leaf">#2F6D4F</color>
+    <color name="on_leaf">#FFFBF6</color>
+    <color name="coral">#C84B3A</color>
+    <color name="sun">#E39B2B</color>
+    <color name="line">#E4D3BE</color>
+    <color name="warning_bg">#F8D7C8</color>
+</resources>

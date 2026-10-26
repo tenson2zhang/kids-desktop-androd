@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">儿童桌面</string>
+    <string name="accessibility_description">儿童桌面用来限制孩子只能打开白名单里的应用。它查看前台窗口的应用包名和窗口类型，把最近任务、通知栏和非白名单应用拉回桌面。不读取屏幕上的文字，也不上传任何内容。</string>
+    <string name="home_subtitle">这里只显示家长允许的应用</string>
+    <string name="empty_apps">桌面上还没有应用。\n请家长把可以玩的应用加进白名单。</string>
+    <string name="shutdown">关机</string>
+    <string name="parent">家长</string>
+    <string name="recovery">忘记密码时，可以关机后长按电源键进入安全模式。安全模式会停用第三方桌面和无障碍服务。再到系统设置里清除「儿童桌面」的数据，或卸载后重新安装。不同手机进入安全模式的按法不一样。</string>
+</resources>

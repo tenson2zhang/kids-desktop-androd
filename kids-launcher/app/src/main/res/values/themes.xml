@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.KidsDesktop" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/bg_screen</item>
+        <item name="android:statusBarColor">@color/bg_deep</item>
+        <item name="android:navigationBarColor">@color/bg_deep</item>
+        <item name="android:textColor">@color/ink</item>
+        <item name="colorAccent">@color/leaf</item>
+        <item name="colorPrimary">@color/leaf</item>
+        <item name="colorButtonNormal">@color/leaf</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="Widget.Kids.Button" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/bg_button_primary</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:textColor">@color/on_leaf</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:minHeight">54dp</item>
+        <item name="android:paddingLeft">16dp</item>
+        <item name="android:paddingRight">16dp</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+
+    <style name="Widget.Kids.Button.Danger">
+        <item name="android:background">@drawable/bg_button_danger</item>
+    </style>
+
+    <style name="Widget.Kids.Button.Secondary">
+        <item name="android:background">@drawable/bg_button_secondary</item>
+        <item name="android:textColor">@color/ink</item>
+    </style>
+
+    <style name="Widget.Kids.Field" parent="Widget.AppCompat.EditText">
+        <item name="android:background">@drawable/bg_field</item>
+        <item name="android:padding">14dp</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">@color/ink</item>
+        <item name="android:textColorHint">@color/ink_soft</item>
+    </style>
+</resources>
