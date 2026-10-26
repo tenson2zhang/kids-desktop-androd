@@ -153,3 +153,25 @@ models:
 成功后用手机浏览器打开 https://github.com/tenson2zhang/kids-desktop-androd/releases/download/apk/kids-desktop.apk 。同一次运行的 Artifacts 里也有 kids-desktop.apk。第一次成功之前，这个地址还没有文件，可以先装仓库里的 kids-launcher/dist/kids-desktop.apk。
 
 本地已跑通 :core:test 和 :app:assembleRelease，正式包 v1、v2 签名都成立。GitHub 上的第一次运行要等 Secret 配好才会成功。
+
+聊天回复里另给了 ANDROID_KEYSTORE_BASE64 和 ANDROID_KEYSTORE_PASSWORD 的实际值，此处打码，没有写入 Git。
+
+## 2026-10-26 06:40:15.796 UTC
+
+### 工具
+
+名称：Shell
+
+参数：git add 工作流、两份 README、app/build.gradle 和本会话记录；git commit；git push -u origin cursor/actions-apk-c301。
+
+结果：提交 6ef1b3d，标题「[Cursor/grok-4.7] 用 GitHub Actions 一键构建安装包」。远程新建分支 cursor/actions-apk-c301。keystore 与 keystore.properties 未纳入提交。
+
+## 2026-10-26 06:40:15.796 UTC
+
+### 工具
+
+名称：ManagePullRequest
+
+参数：action create_pr，branch_name cursor/actions-apk-c301，base_branch main，title 用 GitHub Actions 一键构建安装包。
+
+结果：已创建 https://github.com/tenson2zhang/kids-desktop-androd/pull/3 。
