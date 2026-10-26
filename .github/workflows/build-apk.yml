@@ -28,6 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ANDROID_HOME: ${{ github.workspace }}/android-sdk
+      ANDROID_SDK_ROOT: ${{ github.workspace }}/android-sdk
     steps:
       - name: 取出源代码
         uses: actions/checkout@v4
@@ -63,7 +64,10 @@ jobs:
 
       - name: 构建正式安装包
         working-directory: kids-launcher
-        run: chmod +x ./gradlew && ./gradlew :core:test :app:assembleRelease --no-daemon
+        run: |
+          test "$ANDROID_HOME" = "$ANDROID_SDK_ROOT"
+          printf 'sdk.dir=%s\n' "$ANDROID_HOME" > local.properties
+          chmod +x ./gradlew && ./gradlew :core:test :app:assembleRelease --no-daemon
 
       - name: 检查签名并定名
         run: |

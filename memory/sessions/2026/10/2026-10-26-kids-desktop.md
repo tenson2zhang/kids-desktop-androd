@@ -207,3 +207,25 @@ models:
 参数：python3 kids-launcher/ci/test_materialize_keystore.py。再用夹了说明文字、代码块和换行的 Base64 调用 materialize_keystore.py，并用 keytool -list 检查生成的密钥库。
 
 结果：测试全部通过，包括本地密钥库。严格 b64decode 对这份夹杂文本的输入失败，新解析成功，字节与原密钥库一致。keytool 显示 Keystore type: PKCS12。口令未写入会话。
+
+## 2026-10-26 07:02:09.613 UTC
+
+### 工具
+
+名称：GitHub CI 通知
+
+参数：branch cursor/fix-apk-keystore-c301，commit e08061d8b320145400b5ea415035b2c591ffa4f8，conclusion failure。检查「生成可安装包」失败。
+
+结果：运行 40283150428。签名库解析和写入签名配置已成功。构建正式安装包失败：ANDROID_HOME 指向仓库里的 android-sdk，ANDROID_SDK_ROOT 仍是运行器自带的 /usr/local/lib/android/sdk。
+
+## 2026-10-26 07:03:25.892 UTC
+
+### 思考
+
+密钥解析已经通过。剩下的是 GitHub 运行器同时给出两个不同的 SDK 路径，Android Gradle Plugin 拒绝继续。把 ANDROID_SDK_ROOT 设成和 ANDROID_HOME 相同，并写入 local.properties。
+
+## 2026-10-26 07:03:25.892 UTC
+
+### 代理
+
+签名库已经能写进去。这次失败是运行器上有两套 Android SDK 路径。已经改成只用同一套，并重新推上去等这次构建结果。
