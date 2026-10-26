@@ -94,3 +94,84 @@ models:
 
 可安装的正式包已经放进仓库：kids-launcher/dist/kids-desktop.apk。版本 1.0.0，已用 v1 和 v2 签名，安卓 6 及以上可以安装。手机浏览器打开 https://github.com/tenson2zhang/kids-desktop-androd/raw/cursor/kids-desktop-launcher-c301/kids-launcher/dist/kids-desktop.apk 即可下载。安装时允许浏览器安装未知应用。装好后应用名是「儿童桌面」。SHA-256 是 4e0fe8885bccd822782982e1fb11e43151ae20f83e5fc2dce363897d8b322b79。
 
+
+## 2026-10-26 06:34:07.700 UTC
+
+### 用户
+
+我不希望每次都让你帮我生成apk包，而是希望你帮我利用github的功能（例如：github actions之类）。让我在github上一键就可以根据最新源代码生成最新的apk安装包。
+
+## 2026-10-26 06:34:07.700 UTC
+
+### 思考
+
+用户要自己在 GitHub 上按最新源代码出安装包。用 workflow_dispatch 做一键，main 上改了 kids-launcher 时也自动构建。签名密钥放在 Actions Secrets，不进 Git。APK 发到固定 Release 标签 apk，下载地址不变。继续用已经发布的那把密钥，否则覆盖安装会失败。本环境不能替用户写入仓库 Secret。
+
+## 2026-10-26 06:36:29.869 UTC
+
+### 工具
+
+名称：Write、StrReplace
+
+参数：新增 .github/workflows/build-apk.yml。更新 kids-launcher/README.md 和 README.md。在 kids-launcher/app/build.gradle 的 release 签名里显式打开 v1SigningEnabled 和 v2SigningEnabled。
+
+结果：工作流名称是「构建安装包」。可以手动 Run workflow；推送到 main 且改动 kids-launcher/** 或该工作流文件时也会运行。缺少 ANDROID_KEYSTORE_BASE64 或 ANDROID_KEYSTORE_PASSWORD 时失败，并提示到 Settings → Secrets and variables → Actions 添加。成功后把 kids-desktop.apk 发到标签 apk。密钥文件仍被 gitignore。
+
+## 2026-10-26 06:36:29.869 UTC
+
+### 工具
+
+名称：Shell
+
+参数：查看分支与工作区；用 PyYAML 解析工作流；用本地密钥库做 Base64 往返（口令和 Base64 已打码）；keytool -list。
+
+结果：当前分支 cursor/actions-apk-c301，基于 origin/main 的 d3332a4。工作流有 8 个步骤，Java 17，contents 为 write。密钥别名 kidsdesktop，库口令与密钥口令相同。Base64 往返后字节一致。缺少 Secret 时脚本退出码 1。
+
+## 2026-10-26 06:38:59.340 UTC
+
+### 工具
+
+名称：Shell
+
+参数：在 kids-launcher 执行 ./gradlew :core:test :app:assembleRelease --no-daemon，再用 apksigner verify --verbose 检查 app-release.apk。
+
+结果：BUILD SUCCESSFUL。apksigner：v1 scheme true，v2 scheme true，v3 与 v4 false，signers 1。证书 SHA-256 为 e302a16f288a6f396d45d50f3c562d75cc58a519ea05e15e8d2620c936901b14。keystore.properties 与 jks 仍被 gitignore，没有进入待提交列表。
+
+## 2026-10-26 06:38:59.340 UTC
+
+### 代理
+
+可以在 GitHub 上自己生成安装包。合并到 main 之后，打开仓库的 Actions，左侧选「构建安装包」，点 Run workflow，分支选 main，再点一次 Run workflow。改动 kids-launcher 并推到 main 时也会自动构建。
+
+第一次运行前，到 Settings → Secrets and variables → Actions 添加两个 Secret，不要写进 Git：
+
+- ANDROID_KEYSTORE_BASE64：***
+- ANDROID_KEYSTORE_PASSWORD：***
+
+别名是 kidsdesktop，库口令和密钥口令相同，不必再加 ANDROID_KEY_ALIAS 或 ANDROID_KEY_PASSWORD。必须用这一把已经发布过的密钥，才能覆盖安装现有的「儿童桌面」。换一把密钥就只能卸载重装，保护密码会一起清掉。
+
+成功后用手机浏览器打开 https://github.com/tenson2zhang/kids-desktop-androd/releases/download/apk/kids-desktop.apk 。同一次运行的 Artifacts 里也有 kids-desktop.apk。第一次成功之前，这个地址还没有文件，可以先装仓库里的 kids-launcher/dist/kids-desktop.apk。
+
+本地已跑通 :core:test 和 :app:assembleRelease，正式包 v1、v2 签名都成立。GitHub 上的第一次运行要等 Secret 配好才会成功。
+
+聊天回复里另给了 ANDROID_KEYSTORE_BASE64 和 ANDROID_KEYSTORE_PASSWORD 的实际值，此处打码，没有写入 Git。
+
+## 2026-10-26 06:40:15.796 UTC
+
+### 工具
+
+名称：Shell
+
+参数：git add 工作流、两份 README、app/build.gradle 和本会话记录；git commit；git push -u origin cursor/actions-apk-c301。
+
+结果：提交 6ef1b3d，标题「[Cursor/grok-4.7] 用 GitHub Actions 一键构建安装包」。远程新建分支 cursor/actions-apk-c301。keystore 与 keystore.properties 未纳入提交。
+
+## 2026-10-26 06:40:15.796 UTC
+
+### 工具
+
+名称：ManagePullRequest
+
+参数：action create_pr，branch_name cursor/actions-apk-c301，base_branch main，title 用 GitHub Actions 一键构建安装包。
+
+结果：已创建 https://github.com/tenson2zhang/kids-desktop-androd/pull/3 。

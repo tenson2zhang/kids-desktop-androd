@@ -4,21 +4,29 @@
 
 最低系统版本是安卓 6（API 23）。
 
-## 直接下载安装
+## 在 GitHub 上一键生成安装包
 
-可安装的正式包在仓库里的 `kids-launcher/dist/kids-desktop.apk`。版本 1.0.0，已经签名，手机下载后就能安装。
+Actions 工作流「构建安装包」会按当时的源代码打出已签名的 APK，并发布到 Releases。推送到 `main` 且改动了 `kids-launcher/` 时会自动跑；也可以随时手动点一次。
 
-在 GitHub 上打开这个文件，点 Download：
+第一次使用前，到仓库的 Settings → Secrets and variables → Actions，新增两个 Secret。名字必须一致，值不要写进 Git：
 
-https://github.com/tenson2zhang/kids-desktop-androd/blob/cursor/kids-desktop-launcher-c301/kids-launcher/dist/kids-desktop.apk
+- `ANDROID_KEYSTORE_BASE64`：签名库 `kids-desktop.jks` 的 Base64
+- `ANDROID_KEYSTORE_PASSWORD`：签名库口令
 
-手机浏览器也可以直接下载：
+别名默认是 `kidsdesktop`。密钥口令和库口令不同时，再加 `ANDROID_KEY_PASSWORD`；别名不是 `kidsdesktop` 时，再加 `ANDROID_KEY_ALIAS`。
 
-https://github.com/tenson2zhang/kids-desktop-androd/raw/cursor/kids-desktop-launcher-c301/kids-launcher/dist/kids-desktop.apk
+然后：
 
-SHA-256：`4e0fe8885bccd822782982e1fb11e43151ae20f83e5fc2dce363897d8b322b79`
+1. 打开仓库的 Actions。
+2. 左侧选择「构建安装包」。
+3. 点 Run workflow，分支选 `main`，再点 Run workflow。
+4. 绿色勾出现后，用手机浏览器打开固定地址下载。这个地址每次都会换成刚构建的包：
 
-安装时如果系统询问，允许浏览器「安装未知应用」。装好后，应用名称是「儿童桌面」。从原来的桌面打开它，按提示设成默认桌面。
+https://github.com/tenson2zhang/kids-desktop-androd/releases/download/apk/kids-desktop.apk
+
+同一次运行的 Artifacts 里也有 `kids-desktop.apk`。安装时如果系统询问，允许浏览器「安装未知应用」。装好后应用名称是「儿童桌面」。
+
+仓库里还留着一份已经打好的 `kids-launcher/dist/kids-desktop.apk`。Actions 第一次成功之前可以用它；之后以 Releases 里的新包为准。
 
 ## 能做什么
 
