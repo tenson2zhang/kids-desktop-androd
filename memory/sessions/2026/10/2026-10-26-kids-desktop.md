@@ -175,3 +175,35 @@ models:
 参数：action create_pr，branch_name cursor/actions-apk-c301，base_branch main，title 用 GitHub Actions 一键构建安装包。
 
 结果：已创建 https://github.com/tenson2zhang/kids-desktop-androd/pull/3 。
+
+## 2026-10-26 06:56:36.388 UTC
+
+### 用户
+
+构建报错了，你帮我检查一下是什么问题，能直接修复的话，你帮我直接修复
+
+## 2026-10-26 06:56:36.388 UTC
+
+### 思考
+
+两次「构建安装包」都停在写入签名配置。合并后那次是 Secret 还没填。随后手动运行时 Secret 已有值，但严格的 Base64 解码失败。常见原因是粘贴时夹了换行、代码块或说明文字。解析改成先取整段，失败再从密钥库常见开头 MII 里挑最长的一段，并确认解出来是密钥库。拉取请求只构建不发布，这样可以用仓库里已经保存的 Secret 验证。
+
+## 2026-10-26 06:56:36.388 UTC
+
+### 工具
+
+名称：Shell
+
+参数：gh run list；gh run view 40282491342 --log-failed；gh run view 40281859483 --log-failed。
+
+结果：main 上 workflow_dispatch 运行 40282491342 失败。步骤「写入签名配置」报错：ANDROID_KEYSTORE_BASE64 不是有效的 Base64。日志里该 Secret 显示为已掩码。更早的 push 运行 40281859483 失败，报错是缺少签名密钥，当时这两个 Secret 为空。
+
+## 2026-10-26 06:59:54.121 UTC
+
+### 工具
+
+名称：Shell
+
+参数：python3 kids-launcher/ci/test_materialize_keystore.py。再用夹了说明文字、代码块和换行的 Base64 调用 materialize_keystore.py，并用 keytool -list 检查生成的密钥库。
+
+结果：测试全部通过，包括本地密钥库。严格 b64decode 对这份夹杂文本的输入失败，新解析成功，字节与原密钥库一致。keytool 显示 Keystore type: PKCS12。口令未写入会话。

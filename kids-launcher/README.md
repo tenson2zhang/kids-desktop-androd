@@ -10,7 +10,7 @@ Actions 工作流「构建安装包」会按当时的源代码打出已签名的
 
 第一次使用前，到仓库的 Settings → Secrets and variables → Actions，新增两个 Secret。名字必须一致，值不要写进 Git：
 
-- `ANDROID_KEYSTORE_BASE64`：签名库 `kids-desktop.jks` 的 Base64
+- `ANDROID_KEYSTORE_BASE64`：签名库 `kids-desktop.jks` 的 Base64。整段粘贴即可，换行和代码块标记会被忽略
 - `ANDROID_KEYSTORE_PASSWORD`：签名库口令
 
 别名默认是 `kidsdesktop`。密钥口令和库口令不同时，再加 `ANDROID_KEY_PASSWORD`；别名不是 `kidsdesktop` 时，再加 `ANDROID_KEY_ALIAS`。
